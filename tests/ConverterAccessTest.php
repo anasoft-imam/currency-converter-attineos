@@ -2,6 +2,8 @@
 
 namespace App\Tests;
 
+use App\Entity\User;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class ConverterAccessTest extends WebTestCase
@@ -33,16 +35,26 @@ final class ConverterAccessTest extends WebTestCase
         self::assertResponseIsSuccessful();
     }
 
-    public function testConverterPageContainsCsrfToken(): void
+    public function testAuthenticatedUserCanAccessConverterAndSeeCsrfToken(): void
     {
         $client = static::createClient();
 
-        // Un utilisateur non connecté est redirigé vers la connexion.
+        $user = new User();
+        $user->setEmail(uniqid('test-', true) . '@example.com');
+        $user->setPassword('test-password');
+
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($user);
+        $entityManager->flush();
+
+        $client->loginUser($user);
+
         $client->request('GET', '/');
 
-        $client->followRedirect();
-
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('input[name="_csrf_token"]');
+        self::assertSelectorExists('form[action="/"] input[name="_token"]');
+
+        $entityManager->remove($user);
+        $entityManager->flush();
     }
 }
