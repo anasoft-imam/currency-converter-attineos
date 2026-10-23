@@ -1,0 +1,86 @@
+
+{% extends 'base.html.twig' %}
+
+{% block title %}Connexion | Currency Converter{% endblock %}
+
+{% block body %}
+    <header class="topbar">
+        <a class="brand" href="{{ path('app_login') }}">
+            <span class="brand-mark" aria-hidden="true">↗</span>
+            <span>Currency Converter</span>
+        </a>
+    </header>
+
+    <main class="auth-page">
+        <section class="auth-card" aria-labelledby="login-title">
+            <div class="auth-icon" aria-hidden="true">↗</div>
+
+            <p class="eyebrow">Ravi de vous revoir</p>
+            <h1 id="login-title">Connexion</h1>
+            <p class="auth-subtitle">
+                Connectez-vous pour accéder à votre convertisseur de devises.
+            </p>
+
+            {% if error %}
+                <div class="alert" role="alert">
+                    {{ error.messageKey|trans(error.messageData, 'security') }}
+                </div>
+            {% endif %}
+
+            {% if app.user %}
+                <p class="auth-notice">
+                    Vous êtes connecté en tant que
+                    {{ app.user.userIdentifier }}.
+                    <a href="{{ logout_path() }}">Se déconnecter</a>
+                </p>
+            {% else %}
+                <form method="post" action="{{ path('app_login') }}">
+                    <div class="field">
+                        <label for="username">Adresse e-mail</label>
+                        <input
+                            type="email"
+                            id="username"
+                            name="_username"
+                            value="{{ last_username }}"
+                            placeholder="vous@exemple.com"
+                            autocomplete="email"
+                            required
+                            autofocus
+                        >
+                    </div>
+
+                    <div class="field">
+                        <label for="password">Mot de passe</label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="_password"
+                            placeholder="Votre mot de passe"
+                            autocomplete="current-password"
+                            required
+                        >
+                    </div>
+
+                    <input
+                        type="hidden"
+                        name="_csrf_token"
+                        value="{{ csrf_token('authenticate') }}"
+                    >
+
+                    <button class="primary-button" type="submit">
+                        Se connecter →
+                    </button>
+                </form>
+
+                <p class="auth-footer">
+                    Pas encore de compte ?
+                    <a href="{{ path('app_register') }}">Créer un compte</a>
+                </p>
+            {% endif %}
+        </section>
+
+        <p class="footer">
+            Des conversions simples, rapides et accessibles.
+        </p>
+    </main>
+{% endblock %}

@@ -1,0 +1,112 @@
+
+{% extends 'base.html.twig' %}
+
+{% block title %}Convertisseur de devises | Currency Converter{% endblock %}
+
+{% block body %}
+    <header class="topbar">
+        <a class="brand" href="{{ path('app_converter') }}">
+            <span class="brand-mark" aria-hidden="true">↗</span>
+            <span>Currency Converter</span>
+        </a>
+
+        <a class="logout-link" href="{{ path('app_logout') }}">
+            Se déconnecter
+        </a>
+    </header>
+
+    <main class="page">
+        <div class="page-heading">
+            <p class="eyebrow">Simple · Rapide · Fiable</p>
+            <h1>Convertisseur de devises</h1>
+            <p class="subtitle">
+                Consultez les taux de change et convertissez vos montants
+                en quelques secondes.
+            </p>
+        </div>
+
+        <section class="converter-card" aria-label="Conversion de devises">
+            {% if error %}
+                <div class="alert" role="alert">{{ error }}</div>
+            {% endif %}
+
+            <form method="post" action="{{ path('app_converter') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('currency_conversion') }}">
+
+                <div class="field">
+                    <label for="amount">Montant à convertir</label>
+                    <input
+                        type="number"
+                        id="amount"
+                        name="amount"
+                        min="0.01"
+                        step="0.01"
+                        value="{{ amount }}"
+                        required
+                    >
+                </div>
+
+                <div class="currency-grid">
+                    <div class="field">
+                        <label for="from">Devise d’origine</label>
+                        <select id="from" name="from" required>
+                            {% for code, currency in currencies %}
+                                <option
+                                    value="{{ code }}"
+                                    {% if code == from %}selected{% endif %}
+                                >
+                                    {{ code }} — {{ currency.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="to">Devise cible</label>
+                        <select id="to" name="to" required>
+                            {% for code, currency in currencies %}
+                                <option
+                                    value="{{ code }}"
+                                    {% if code == to %}selected{% endif %}
+                                >
+                                    {{ code }} — {{ currency.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <button class="primary-button" type="submit">
+                    Convertir le montant →
+                </button>
+            </form>
+
+            {% if result is not null and rate is not null %}
+                <section class="result-card" aria-live="polite">
+                    <p class="result-label">Montant après conversion</p>
+
+                    <p class="result-amount">
+                        {{ result|number_format(2, ',', ' ') }} {{ to }}
+                    </p>
+
+                    <p class="result-equation">
+                        {{ amount|number_format(2, ',', ' ') }} {{ from }}
+                        = {{ result|number_format(2, ',', ' ') }} {{ to }}
+                    </p>
+
+                    <p class="rate-note">
+                        Taux appliqué : 1 {{ from }} =
+                        {{ rate|number_format(6, ',', ' ') }} {{ to }}.
+                        <br>
+                        Taux de change fourni par Frankfurter.
+                    </p>
+                </section>
+            {% endif %}
+        </section>
+
+        <p class="footer">
+            Les taux peuvent varier au fil du temps.
+            Les résultats sont fournis à titre indicatif.
+        </p>
+    </main>
+{% endblock %}

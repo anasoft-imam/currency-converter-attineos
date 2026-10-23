@@ -1,0 +1,31 @@
+services:
+  app:
+    build:
+      context: .
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    command: php -d session.upload_progress.enabled=0 -S 0.0.0.0:8000 -t public
+    depends_on:
+      database:
+        condition: service_healthy
+
+  database:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: currency_converter
+      MARIADB_USER: currency_user
+      MARIADB_PASSWORD: change_me_dev
+      MARIADB_ROOT_PASSWORD: change_me_root_dev
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mariadb_data:

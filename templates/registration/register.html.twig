@@ -1,0 +1,70 @@
+
+{% extends 'base.html.twig' %}
+
+{% block title %}Créer un compte | Currency Converter{% endblock %}
+
+{% block body %}
+    <header class="topbar">
+        <a class="brand" href="{{ path('app_login') }}">
+            <span class="brand-mark" aria-hidden="true">↗</span>
+            <span>Currency Converter</span>
+        </a>
+    </header>
+
+    <main class="auth-page">
+        <section class="auth-card" aria-labelledby="register-title">
+            <div class="auth-icon" aria-hidden="true">+</div>
+
+            <p class="eyebrow">Bienvenue</p>
+            <h1 id="register-title">Créer un compte</h1>
+            <p class="auth-subtitle">
+                Inscrivez-vous pour accéder à votre convertisseur de devises.
+            </p>
+
+            {{ form_errors(registrationForm) }}
+
+            {{ form_start(registrationForm) }}
+            <div class="field">
+                {{ form_label(registrationForm.email, 'Adresse e-mail') }}
+                {{ form_widget(registrationForm.email, {
+                    attr: {
+                        placeholder: 'vous@exemple.com',
+                        autocomplete: 'email'
+                    }
+                }) }}
+                {{ form_errors(registrationForm.email) }}
+            </div>
+
+            <div class="field">
+                {{ form_label(registrationForm.plainPassword, 'Mot de passe') }}
+                {{ form_widget(registrationForm.plainPassword, {
+                    attr: {
+                        placeholder: 'Choisissez un mot de passe',
+                        autocomplete: 'new-password'
+                    }
+                }) }}
+                {{ form_errors(registrationForm.plainPassword) }}
+            </div>
+
+            <div class="terms-field">
+                {{ form_widget(registrationForm.agreeTerms) }}
+                {{ form_label(registrationForm.agreeTerms, 'J’accepte les conditions d’utilisation') }}
+                {{ form_errors(registrationForm.agreeTerms) }}
+            </div>
+
+            <button type="submit" class="primary-button">
+                Créer mon compte →
+            </button>
+            {{ form_end(registrationForm) }}
+
+            <p class="auth-footer">
+                Vous avez déjà un compte ?
+                <a href="{{ path('app_login') }}">Se connecter</a>
+            </p>
+        </section>
+
+        <p class="footer">
+            Des conversions simples, rapides et accessibles.
+        </p>
+    </main>
+{% endblock %}
