@@ -58,6 +58,11 @@ jobs:
                   restore-keys: |
                       ${{ runner.os }}-php84-
 
+            - name: Create Symfony environment file
+              run: |
+                  echo "APP_ENV=test" > .env
+                  echo "APP_SECRET=ci_test_secret_not_for_production" >> .env
+
             - name: Install PHP dependencies
               run: composer install --no-interaction --prefer-dist --no-progress --optimize-autoloader
 
