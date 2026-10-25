@@ -29,6 +29,7 @@ jobs:
             APP_ENV: test
             APP_DEBUG: 0
             APP_SECRET: ci_test_secret_not_for_production
+            DEFAULT_URI: "http://localhost:8000"
             DATABASE_URL: "mysql://currency_user:test_password@127.0.0.1:3306/currency_converter?serverVersion=mariadb-11.4.0&charset=utf8mb4"
 
         steps:
