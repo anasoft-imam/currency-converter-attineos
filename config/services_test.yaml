@@ -1,0 +1,4 @@
+services:
+    App\Service\ExchangeRateService:
+        autowire: true
+        public: true

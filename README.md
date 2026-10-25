@@ -1,83 +1,184 @@
-
 # Currency Converter
 
-A currency conversion web application built with **Symfony 7**, **PHP 8.4**, and **MariaDB**.
+A currency conversion web application built with **PHP 8.4, Symfony 7.4, and MariaDB 11.4**.
+
+The application allows authenticated users to convert amounts between supported currencies using exchange rates provided by the [Frankfurter API](https://frankfurter.dev/).
+
+The project focuses on clean code, separation of responsibilities, security, testability, and a straightforward user experience.
 
 ## Features
 
-- User registration and login
-- Protected currency converter
+- User registration and authentication
+- Currency converter accessible to authenticated users
 - Supported currencies retrieved from the Frankfurter API
-- Live exchange-rate retrieval
-- Input validation and CSRF protection
-- Graceful handling of external API errors
-- Automated tests
+- Exchange rates retrieved on demand
+- Currency list cached for 24 hours to reduce external API calls
+- Amount and currency validation
+- CSRF protection for form submissions
+- User-friendly error handling for API failures and invalid input
+- Loading indicator during form submission
+- Automated unit and functional tests
 
 ## Tech Stack
 
-- **Backend:** PHP 8.4, Symfony 7
-- **Templating:** Twig
-- **Database:** MariaDB 11.4
-- **ORM & Migrations:** Doctrine ORM, Doctrine Migrations
-- **HTTP Client:** Symfony HttpClient
-- **Testing:** PHPUnit
-- **Infrastructure:** Docker Compose
+| Component | Technology |
+|---|---|
+| Backend | PHP 8.4, Symfony 7.4 |
+| Frontend | Twig, HTML, CSS, JavaScript |
+| Database | MariaDB 11.4 |
+| ORM & Migrations | Doctrine ORM, Doctrine Migrations |
+| HTTP Client | Symfony HttpClient |
+| Caching | Symfony Cache (PSR-6) |
+| Testing | PHPUnit, Symfony WebTestCase, MockHttpClient |
+| Infrastructure | Docker Compose |
 
 ## Requirements
 
 - Docker Desktop with Docker Compose
 - Internet access to retrieve exchange rates from Frankfurter
 
+No local PHP, Composer, or MariaDB installation is required.
+
 ## Getting Started
 
-### 1. Start the application
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/anasoft-imam/currency-converter-attineos.git
+cd currency-converter-attineos
+```
+
+### 2. Start the containers
 
 ```bash
 docker compose up -d --build
 ```
 
-### 2. Install PHP dependencies
+Docker Compose starts the Symfony application and a MariaDB database.
+
+### 3. Install PHP dependencies
 
 ```bash
 docker compose exec app composer install
 ```
 
-### 3. Run database migrations
+### 4. Run database migrations
 
 ```bash
 docker compose exec app php bin/console doctrine:migrations:migrate --no-interaction
 ```
 
-### 4. Open the application
+### 5. Open the application
 
-Visit [http://localhost:8000](http://localhost:8000).
+Visit **http://localhost:8000**.
 
-Create an account, sign in, and start converting currencies.
+Register a user account, sign in, and start converting currencies.
 
 ## Running Tests
 
+The project includes unit and functional tests covering authentication, currency conversion, validation, API failures, and caching.
+
+Run the complete test suite:
+
 ```bash
-docker compose exec app php bin/phpunit
+docker compose exec app php bin/phpunit --testdox
 ```
 
-## Exchange Rate API
+The tests use a dedicated test database and Symfony's `MockHttpClient` to simulate external API responses without depending on live exchange rates.
 
-The application uses the [Frankfurter API](https://frankfurter.dev/) to retrieve supported currencies and exchange rates.
+The current test suite contains **18 tests and 34 assertions**.
 
-Exchange rates depend on data provided by the external service. Internet access is required for currency conversions.
+### Test coverage
+
+| Area | Scenarios |
+|---|---|
+| Authentication | Protected routes, login and registration page accessibility |
+| Currency conversion | Successful conversion, invalid amount, unsupported currency |
+| Security | CSRF token validation |
+| External API | Successful responses, unavailable API, malformed exchange rates |
+| Caching | Reuse of cached currency data without additional HTTP requests |
+
+## Architecture and Design Decisions
+
+### Separation of responsibilities
+
+The application separates HTTP request handling from exchange-rate retrieval:
+
+- **`ConverterController`** handles form display, submission, validation, and user-facing responses.
+- **`ExchangeRateService`** communicates with the Frankfurter API, validates external data, and manages currency caching.
+- **Twig templates** handle presentation.
+
+GET and POST requests use dedicated controller actions, keeping form rendering and submission processing distinct.
+
+### External API integration
+
+The application uses the [Frankfurter API](https://frankfurter.dev/) to retrieve:
+
+- Supported currencies: `GET /v2/currencies`
+- Exchange rates: `GET /v2/rate/{from}/{to}`
+
+External API responses are validated before use. Network failures and invalid responses are handled gracefully.
+
+### Caching strategy
+
+The list of supported currencies is cached for **24 hours** using Symfony Cache.
+
+This avoids unnecessary HTTP requests whenever users open or submit the conversion form.
+
+Exchange rates are retrieved on demand rather than cached, keeping the implementation straightforward and avoiding application-level rate staleness.
+
+### Security
+
+- Converter routes require authentication.
+- Form submissions are protected by Symfony CSRF tokens.
+- User-provided amounts and currency codes are validated server-side.
+- Authentication is managed by Symfony Security.
+
+### Testing strategy
+
+The application combines service-level unit tests with functional HTTP tests.
+
+External API calls are simulated using `MockHttpClient`, allowing deterministic tests without requiring a live connection to Frankfurter.
+
+An in-memory cache adapter is used in service tests to verify caching behavior independently.
+
+## Docker Development Environment
+
+Docker Compose provides a consistent development environment using PHP 8.4 and MariaDB 11.4.
+
+The application source code is mounted into the container for local development. Dedicated Docker volumes are used for Composer dependencies, Symfony cache, and logs to reduce filesystem overhead, particularly when developing with Docker Desktop on Windows.
+
+After changing Composer dependencies, run:
+
+```bash
+docker compose exec app composer install
+```
+
+Dependencies inside the Docker volume are managed separately from any local `vendor` directory.
 
 ## Stopping the Application
 
-Stop the containers:
+Stop the containers without deleting the database:
 
 ```bash
 docker compose down
 ```
 
-To remove the local database volume as well, run:
+To remove containers and their associated named volumes:
 
 ```bash
 docker compose down -v
 ```
 
-**Warning:** The `-v` option deletes the local database data.
+**Warning:** The `-v` option permanently deletes local MariaDB data and other named volumes, including cached files and container-managed dependencies.
+
+## Limitations
+
+- Exchange rates depend on the availability of the Frankfurter API.
+- Internet access is required for retrieving uncached currency data and exchange rates.
+- Converted amounts are displayed with two decimal places.
+- The application is intended as a technical exercise and demonstration project, not a financial trading platform.
+
+## License
+
+This project was developed as a technical assessment.

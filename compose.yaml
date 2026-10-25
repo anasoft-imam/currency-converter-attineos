@@ -5,6 +5,9 @@ services:
     working_dir: /app
     volumes:
       - .:/app
+      - symfony_vendor:/app/vendor
+      - symfony_cache:/app/var/cache
+      - symfony_logs:/app/var/log
     ports:
       - "8000:8000"
     command: php -d session.upload_progress.enabled=0 -S 0.0.0.0:8000 -t public
@@ -29,3 +32,6 @@ services:
 
 volumes:
   mariadb_data:
+  symfony_vendor:
+  symfony_cache:
+  symfony_logs:

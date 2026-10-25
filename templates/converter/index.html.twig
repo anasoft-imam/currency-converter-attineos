@@ -1,4 +1,3 @@
-
 {% extends 'base.html.twig' %}
 
 {% block title %}Convertisseur de devises | Currency Converter{% endblock %}
@@ -30,8 +29,16 @@
                 <div class="alert" role="alert">{{ error }}</div>
             {% endif %}
 
-            <form method="post" action="{{ path('app_converter') }}">
-                <input type="hidden" name="_token" value="{{ csrf_token('currency_conversion') }}">
+            <form
+                id="converter-form"
+                method="post"
+                action="{{ path('app_converter_submit') }}"
+            >
+                <input
+                    type="hidden"
+                    name="_token"
+                    value="{{ csrf_token('currency_conversion') }}"
+                >
 
                 <div class="field">
                     <label for="amount">Montant à convertir</label>
@@ -76,9 +83,30 @@
                     </div>
                 </div>
 
-                <button class="primary-button" type="submit">
-                    Convertir le montant →
+                <button
+                    id="convert-button"
+                    class="primary-button"
+                    type="submit"
+                >
+                    <span class="button-label">
+                        Convertir le montant →
+                    </span>
+                    <span
+                        class="button-loading"
+                        hidden
+                        aria-hidden="true"
+                    >
+                        <span class="button-spinner"></span>
+                        Conversion en cours...
+                    </span>
                 </button>
+
+                <p
+                    id="conversion-status"
+                    class="visually-hidden"
+                    role="status"
+                    aria-live="polite"
+                ></p>
             </form>
 
             {% if result is not null and rate is not null %}
@@ -97,7 +125,6 @@
                     <p class="rate-note">
                         Taux appliqué : 1 {{ from }} =
                         {{ rate|number_format(6, ',', ' ') }} {{ to }}.
-                        <br>
                         Taux de change fourni par Frankfurter.
                     </p>
                 </section>
@@ -109,4 +136,90 @@
             Les résultats sont fournis à titre indicatif.
         </p>
     </main>
+
+    <style>
+        .button-loading[hidden] {
+            display: none !important;
+        }
+
+        .button-loading:not([hidden]) {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .button-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: converter-spin 0.7s linear infinite;
+        }
+
+        .primary-button:disabled {
+            opacity: 0.75;
+            cursor: wait;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        @keyframes converter-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .button-spinner {
+                animation-duration: 2s;
+            }
+        }
+    </style>
+
+    <script>
+        (() => {
+            const form = document.getElementById('converter-form');
+            const button = document.getElementById('convert-button');
+            const label = button?.querySelector('.button-label');
+            const loading = button?.querySelector('.button-loading');
+            const status = document.getElementById('conversion-status');
+
+            if (!form || !button || !label || !loading || !status) {
+                return;
+            }
+
+            form.addEventListener('submit', () => {
+                // Submit fires only after native HTML form validation.
+                // Defer disabling the button so its submission proceeds.
+                window.setTimeout(() => {
+                    button.disabled = true;
+                    button.setAttribute('aria-busy', 'true');
+                    label.hidden = true;
+                    loading.hidden = false;
+                    status.textContent = 'Conversion en cours...';
+                }, 0);
+            });
+
+            // Restore the button when returning via browser back/forward cache.
+            window.addEventListener('pageshow', () => {
+                button.disabled = false;
+                button.removeAttribute('aria-busy');
+                label.hidden = false;
+                loading.hidden = true;
+                status.textContent = '';
+            });
+        })();
+    </script>
 {% endblock %}
