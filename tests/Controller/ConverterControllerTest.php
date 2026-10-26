@@ -3,6 +3,8 @@
 namespace App\Tests\Controller;
 
 use App\Entity\User;
+use App\Controller\ConverterController;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -232,5 +234,46 @@ final class ConverterControllerTest extends WebTestCase
         $this->testUserId = null;
 
         parent::tearDown();
+    }
+
+    public function testApiFailureIsLogged(): void
+    {
+        $httpClient = new MockHttpClient(
+            static fn (): MockResponse => new MockResponse(
+                '{"message":"Service unavailable"}',
+                ['http_code' => 503],
+            ),
+        );
+
+        $client = $this->createAuthenticatedClient($httpClient);
+
+        $logger = $this->createMock(LoggerInterface::class);
+
+        $logger->expects(self::once())
+            ->method('warning')
+            ->with(
+                'Failed to retrieve supported currencies',
+                self::callback(
+                    static fn (array $context): bool =>
+                        isset($context['exception'])
+                        && $context['exception'] instanceof \Throwable,
+                ),
+            );
+
+        $controller = new ConverterController($logger);
+        $controller->setContainer(static::getContainer());
+
+        static::getContainer()->set(
+            ConverterController::class,
+            $controller,
+        );
+
+        $client->request('GET', '/');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains(
+            '[role="alert"]',
+            'Le service de devises est temporairement indisponible.',
+        );
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Service\ExchangeRateService;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,6 +18,11 @@ use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 #[IsGranted('ROLE_USER')]
 final class ConverterController extends AbstractController
 {
+    public function __construct(
+        private readonly LoggerInterface $logger,
+    ) {
+    }
+
     /**
      * Displays the currency conversion form.
      */
@@ -90,8 +96,12 @@ final class ConverterController extends AbstractController
         TransportExceptionInterface |
         HttpExceptionInterface |
         DecodingExceptionInterface |
-        \UnexpectedValueException
+        \UnexpectedValueException $exception
         ) {
+            $this->logger->warning('Failed to retrieve supported currencies', [
+                'exception' => $exception,
+            ]);
+
             $error = 'Le service de devises est temporairement indisponible. Veuillez réessayer.';
         }
 
@@ -114,8 +124,14 @@ final class ConverterController extends AbstractController
                 TransportExceptionInterface |
                 HttpExceptionInterface |
                 DecodingExceptionInterface |
-                \UnexpectedValueException
+                \UnexpectedValueException $exception
                 ) {
+                    $this->logger->warning('Failed to retrieve exchange rate', [
+                        'from' => $from,
+                        'to' => $to,
+                        'exception' => $exception,
+                    ]);
+
                     $error = 'Impossible de récupérer le taux de change. Veuillez réessayer.';
                 }
             }
