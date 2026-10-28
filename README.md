@@ -74,6 +74,55 @@ Visit **http://localhost:8000**.
 
 Register a user account, sign in, and start converting currencies.
 
+## Test Environment Setup
+
+The application uses a dedicated test database to keep test data separate from the development environment.
+
+Before running the tests for the first time, follow these steps.
+
+### 1. Create the `.env.test` file
+
+Create a file named `.env.test` at the root of the project.
+
+Add the following configuration:
+
+```dotenv
+APP_ENV=test
+APP_SECRET=test_secret_key
+DATABASE_URL="mysql://app:app@db:3306/currency_converter_test?serverVersion=mariadb-11.4.0&charset=utf8mb4"
+```
+
+**Important:** The database username, password, hostname, and database name must match your Docker Compose and Doctrine configuration.
+
+The example above assumes:
+
+- Database username: `app`
+- Database password: `app`
+- Database hostname: `db`
+- Test database name: `currency_converter_test`
+
+Do not use the development or production database for tests.
+
+If a `.env.test.example` file is provided in the repository, you can copy it instead of creating the file manually:
+
+```bash
+cp .env.test.example .env.test
+```
+
+### 2. Create the test database
+
+```bash
+docker compose exec app php bin/console doctrine:database:create --env=test --if-not-exists
+```
+
+### 3. Apply database migrations in the test environment
+
+```bash
+docker compose exec app php bin/console doctrine:migrations:migrate --env=test --no-interaction
+```
+
+The test environment is now ready.
+
 ## Running Tests
 
 The project includes unit and functional tests covering authentication, currency conversion, validation, API failures, and caching.
@@ -86,9 +135,9 @@ docker compose exec app php bin/phpunit --testdox
 
 The tests use a dedicated test database and Symfony's `MockHttpClient` to simulate external API responses without depending on live exchange rates.
 
-The current test suite contains **18 tests and 34 assertions**.
+The test suite includes unit and functional tests. Test and assertion counts can be checked in the PHPUnit output.
 
-### Test coverage
+### Test Coverage
 
 | Area | Scenarios |
 |---|---|
@@ -97,35 +146,40 @@ The current test suite contains **18 tests and 34 assertions**.
 | Security | CSRF token validation |
 | External API | Successful responses, unavailable API, malformed exchange rates |
 | Caching | Reuse of cached currency data without additional HTTP requests |
+| Logging | API failures logged with exception context |
 
 ## Architecture and Design Decisions
 
-### Separation of responsibilities
+### Separation of Responsibilities
 
 The application separates HTTP request handling from exchange-rate retrieval:
 
-- **`ConverterController`** handles form display, submission, validation, and user-facing responses.
-- **`ExchangeRateService`** communicates with the Frankfurter API, validates external data, and manages currency caching.
-- **Twig templates** handle presentation.
+- `ConverterController` handles form display, submission, validation, and user-facing responses.
+- `ExchangeRateService` communicates with the Frankfurter API, validates external data, and manages currency caching.
+- Twig templates handle presentation.
 
 GET and POST requests use dedicated controller actions, keeping form rendering and submission processing distinct.
 
-### External API integration
+### External API Integration
 
-The application uses the [Frankfurter API](https://frankfurter.dev/) to retrieve:
+The application uses the Frankfurter API to retrieve:
 
 - Supported currencies: `GET /v2/currencies`
 - Exchange rates: `GET /v2/rate/{from}/{to}`
 
-External API responses are validated before use. Network failures and invalid responses are handled gracefully.
+External API responses are validated before use.
 
-### Caching strategy
+Network failures and invalid responses are handled gracefully, with technical details logged and user-friendly messages displayed.
+
+### Caching Strategy
 
 The list of supported currencies is cached for **24 hours** using Symfony Cache.
 
 This avoids unnecessary HTTP requests whenever users open or submit the conversion form.
 
 Exchange rates are retrieved on demand rather than cached, keeping the implementation straightforward and avoiding application-level rate staleness.
+
+When the source and target currencies are identical, the exchange-rate service returns `1.0` without making an external request.
 
 ### Security
 
@@ -134,9 +188,13 @@ Exchange rates are retrieved on demand rather than cached, keeping the implement
 - User-provided amounts and currency codes are validated server-side.
 - Authentication is managed by Symfony Security.
 
-### Testing strategy
+### Testing Strategy
 
 The application combines service-level unit tests with functional HTTP tests.
+
+**Unit tests** validate the exchange-rate service independently, including valid and invalid rates, currency validation, API errors, and caching behavior.
+
+**Functional tests** use Symfony's `WebTestCase` to verify HTTP responses, authenticated access, form submissions, error messages, CSRF protection, and logging.
 
 External API calls are simulated using `MockHttpClient`, allowing deterministic tests without requiring a live connection to Frankfurter.
 
@@ -146,7 +204,9 @@ An in-memory cache adapter is used in service tests to verify caching behavior i
 
 Docker Compose provides a consistent development environment using PHP 8.4 and MariaDB 11.4.
 
-The application source code is mounted into the container for local development. Dedicated Docker volumes are used for Composer dependencies, Symfony cache, and logs to reduce filesystem overhead, particularly when developing with Docker Desktop on Windows.
+The application source code is mounted into the container for local development.
+
+Dedicated Docker volumes are used for Composer dependencies, Symfony cache, and logs to reduce filesystem overhead, particularly when developing with Docker Desktop on Windows.
 
 After changing Composer dependencies, run:
 
